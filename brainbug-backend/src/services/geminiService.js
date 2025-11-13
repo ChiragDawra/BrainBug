@@ -5,18 +5,22 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const analyzeWithGemini = async (code, mlOutput, retries = 3) => {
     const prompt = `
-    You are BrainBug AI. Analyze the following code.
-    ML Model says:
-    ${JSON.stringify(mlOutput, null, 2)}
-
-    Now deeply analyze:
-    - bugs
-    - fixes
-    - optimizations
-    - cleaner code suggestions
-
+    You are BrainBug AI. Analyze this code and provide ONLY ONE concise line (max 100 characters).
+    
+    ML Model Detection: ${JSON.stringify(mlOutput, null, 2)}
+    
     Code:
     ${code}
+    
+    Format your response as ONE line following this pattern:
+    "✓ [Status] | [Key Issue/Suggestion] | Severity: [Low/Med/High]"
+    
+    Examples:
+    - "✓ Clean | Consider adding input validation | Severity: Medium"
+    - "✗ Bug Found | Undefined variable 'x' at line 12 | Severity: High"
+    - "✓ Optimal | No issues detected, code looks good | Severity: Low"
+    
+    Respond with ONLY the single line, no explanation, no markdown, no extra text.
     `;
 
     // Try different models in order of preference
@@ -46,9 +50,26 @@ export const analyzeWithGemini = async (code, mlOutput, retries = 3) => {
                 );
 
                 // Extract the text from Gemini's response
-                const analysisText = result.data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available";
+                let analysisText = result.data.candidates?.[0]?.content?.parts?.[0]?.text || "✓ Analysis unavailable";
+                
+                // Clean up the response - remove any extra whitespace, newlines, markdown
+                analysisText = analysisText
+                    .trim()
+                    .replace(/```.*?```/gs, '') // Remove code blocks
+                    .replace(/\n+/g, ' ') // Replace newlines with space
+                    .replace(/\s+/g, ' ') // Collapse multiple spaces
+                    .trim();
+                
+                // Take only first line if multiple lines somehow returned
+                analysisText = analysisText.split('\n')[0];
+                
+                // Truncate if too long (max 150 chars for safety)
+                if (analysisText.length > 150) {
+                    analysisText = analysisText.substring(0, 147) + '...';
+                }
                 
                 console.log(`✓ Successfully analyzed with ${model}`);
+                console.log(`Analysis: ${analysisText}`);
                 
                 return {
                     analysis: analysisText,

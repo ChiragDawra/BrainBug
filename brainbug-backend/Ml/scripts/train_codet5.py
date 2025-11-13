@@ -66,9 +66,19 @@ def train_model():
     
     # Load tokenizer and model
     print(f"📥 Loading {config['model_name']}...")
-    tokenizer = RobertaTokenizer.from_pretrained(config['model_name'])
-    model = T5ForConditionalGeneration.from_pretrained(config['model_name'])
+    tokenizer = RobertaTokenizer.from_pretrained(
+    config['model_name'],
+    use_fast=True,
+    trust_remote_code=True
+)
+
     
+    model = T5ForConditionalGeneration.from_pretrained(
+    config['model_name'],
+    trust_remote_code=True,
+    use_safetensors=True
+)
+
     # Load data
     train_data, val_data = load_data()
     
@@ -96,7 +106,8 @@ def train_model():
         eval_steps=config['eval_steps'],
         logging_dir=config['logging_dir'],
         logging_steps=100,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
+
         save_total_limit=3,
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
