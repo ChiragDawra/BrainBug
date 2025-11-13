@@ -16,7 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from core.views import analyze_code
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/analyze/', analyze_code, name='analyze_code'),
 ]
