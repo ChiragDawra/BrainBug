@@ -17,8 +17,11 @@ mongoose.connect(process.env.MONGO_URI) // <-- This is the updated line
 // --- ROUTES ---
 // Import from your actual file name: bugsRoutes.js
 import bugRoutes from './src/routes/bugsRoutes.js'; // <-- This is the corrected line
+import analyzeRoutes from './src/routes/analyzeRoute.js';
 
 app.use('/api', bugRoutes);
+app.use('/api/analyze', analyzeRoutes);
+
 
 // ... (rest of your file) ...
 
