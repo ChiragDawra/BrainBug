@@ -16,12 +16,24 @@ export const analyzeWithGemini = async (code, mlOutput) => {
     ${code}
     `;
 
-    const result = await axios.post(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + process.env.GEMINI_API_KEY,
-        {
-            contents: [{ parts: [{ text: prompt }] }]
-        }
-    );
+    try {
+        // Use v1beta endpoint with Gemini 2.5 Flash (latest stable model)
+        const result = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            {
+                contents: [{ parts: [{ text: prompt }] }]
+            }
+        );
 
-    return result.data;
+        // Extract the text from Gemini's response
+        const analysisText = result.data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available";
+        
+        return {
+            analysis: analysisText,
+            rawResponse: result.data
+        };
+    } catch (error) {
+        console.error("Gemini API Error:", error.response?.data || error.message);
+        throw new Error(`Failed to analyze code with Gemini: ${error.response?.data?.error?.message || error.message}`);
+    }
 };
