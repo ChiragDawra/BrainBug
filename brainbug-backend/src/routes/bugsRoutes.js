@@ -1,41 +1,48 @@
 import express from 'express';
+// 1. Import your Mongoose model
+import BugHistory from '../models/BugHistory.js'; 
+// 2. Import your service function
+import { saveResult } from '../services/dbService.js';
+
 const router = express.Router();
 
-// This is the mock data from your frontend's BugHistory page
-const allBugs = [
-  {
-    id: 1,
-    type: 'Null Pointer Exception',
-    file: 'src/components/UserProfile.tsx',
-    line: 42,
-    date: '2024-12-11T10:00:00Z',
-    snippet: 'const user = users.find(u => u.id === userId);\nreturn user.name; // user might be undefined',
-    language: 'TypeScript',
-  },
-  {
-    id: 2,
-    type: 'Off-by-One Error',
-    file: 'src/utils/arrayHelpers.ts',
-    line: 128,
-    date: '2024-12-11T08:30:00Z',
-    snippet: 'for (let i = 0; i <= arr.length; i++) {\n  // Should be i < arr.length\n  process(arr[i]);\n}',
-    language: 'TypeScript',
-  },
-  {
-    id: 3,
-    type: 'Type Mismatch',
-    file: 'src/api/endpoints.ts',
-    line: 67,
-    date: '2024-12-10T14:20:00Z',
-    snippet: 'const count: number = "123"; // Type string not assignable to number',
-    language: 'TypeScript',
+// ---
+// GET /api/bugs (Fetches all bugs for the BugHistory page)
+// ---
+router.get('/bugs', async (req, res) => {
+  console.log("Request received for GET /api/bugs");
+  
+  try {
+    const bugs = await BugHistory.find({});
+    res.json(bugs);
+  } catch (error) {
+    console.error("Database error fetching bugs:", error);
+    res.status(500).json({ message: "Error fetching bug history" });
   }
-];
-
-// This creates a GET route at /api/bugs
-router.get('/bugs', (req, res) => {
-  console.log("Request received for /api/bugs");
-  res.json(allBugs);
 });
+
+
+// ---
+// POST /api/bugs (Saves a new bug using your dbService)
+// ---
+router.post('/bugs', async (req, res) => {
+  console.log("Request received for POST /api/bugs");
+  
+  try {
+    // 3. Get the data from the request body
+    const { userId, fileName, code, ml, gemini } = req.body;
+
+    // 4. Use your saveResult function to save to the DB
+    const newBug = await saveResult(userId, fileName, code, ml, gemini);
+    
+    // 5. Send back a "201 Created" status and the new bug
+    res.status(201).json(newBug);
+
+  } catch (error) {
+    console.error("Database error saving bug:", error);
+    res.status(500).json({ message: "Error saving bug" });
+  }
+});
+
 
 export default router;

@@ -5,57 +5,78 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Button } from '../ui/button';
 
-// 2. DEFINE A TYPESCRIPT INTERFACE FOR YOUR BUG DATA
-// This should match the data structure from your Express backend
+// 2. DEFINE THE SHAPE OF THE DATA THE *COMPONENT* NEEDS
 interface Bug {
-  id: number;
+  id: string; // MongoDB _id is a string
   type: string;
   file: string;
   line: number;
-  date: string; // We'll receive a string (like an ISO date) from the API
+  date: string;
   snippet: string;
   language: string;
 }
 
-// 3. THE ORIGINAL 'allBugs' ARRAY IS NOW DELETED
-// We will get this data from our API
+// 3. DEFINE THE SHAPE OF THE *API RESPONSE* (matches your BugHistory.js model)
+interface BugHistoryDocument {
+  _id: string;
+  userId: string;
+  fileName: string;
+  originalCode: string;
+  mlPredictions: any; // We can make this more specific later
+  geminiOutput: any;  // We can make this more specific later
+  createdAt: string;  // MongoDB sends dates as strings
+}
+
+// 4. DELETE THE OLD STATIC 'allBugs' ARRAY
+// const allBugs = [ ... ];
 
 export function BugHistory() {
-  // 4. SET UP STATE TO HOLD THE DATA FROM THE API
-  const [allBugs, setAllBugs] = useState<Bug[]>([]); // Starts as an empty array
+  // 5. SET UP STATE TO HOLD THE *TRANSFORMED* BUGS
+  const [allBugs, setAllBugs] = useState<Bug[]>([]);
   const [filterDate, setFilterDate] = useState('all');
   const [filterType, setFilterType] = useState('all');
 
-  // 5. ADD THE useEffect HOOK TO FETCH DATA WHEN THE COMPONENT LOADS
+  // 6. FETCH AND TRANSFORM DATA ON COMPONENT LOAD
   useEffect(() => {
-    // We define an async function inside the effect
     const fetchBugs = async () => {
       try {
-        // This is the URL to the Express API endpoint we created
+        // Fetch from your Express API
         const response = await fetch('http://127.0.0.1:8000/api/bugs');
-        
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
         
-        const data: Bug[] = await response.json();
-        setAllBugs(data); // Put the fetched bugs into our state
+        const data: BugHistoryDocument[] = await response.json();
+
+        // === IMPORTANT: DATA TRANSFORMATION ===
+        // We map the data from your DB schema to what the component expects
+        const transformedBugs: Bug[] = data.map(doc => ({
+          id: doc._id,
+          file: doc.fileName,
+          date: doc.createdAt,
+          
+          // --- We must make assumptions here. ---
+          // --- Adjust this based on your geminiOutput/mlPredictions object structure ---
+          type: doc.geminiOutput?.type || doc.mlPredictions?.type || 'Bug Type Unknown',
+          line: doc.geminiOutput?.line || doc.mlPredictions?.line || 0,
+          snippet: doc.geminiOutput?.snippet || doc.originalCode, // Fallback to original code
+          language: doc.geminiOutput?.language || 'JavaScript' // Default language
+        }));
+
+        setAllBugs(transformedBugs); // 7. Set the *transformed* data in state
       } catch (error) {
         console.error("Failed to fetch bugs:", error);
-        // You could set an error state here to show a message to the user
       }
     };
 
-    fetchBugs(); // Call the function
-  }, []); // The empty array [] means this effect runs only ONCE, when the component mounts
+    fetchBugs();
+  }, []); // The empty array [] means this runs only once
 
   
-  // 6. THE REST OF THE COMPONENT WORKS AS-IS!
-  // This logic now uses the 'allBugs' from our state,
-  // which is filled by the API call.
+  // --- FROM HERE DOWN, THE COMPONENT IS UNCHANGED ---
+  // It now uses the 'allBugs' from our state, which is filled by the API.
 
   const filteredBugs = allBugs.filter((bug) => {
-    // Small update to make date filtering work with ISO date strings
     const dateMatch = filterDate === 'all' || new Date(bug.date).toISOString().startsWith(filterDate);
     const typeMatch = filterType === 'all' || bug.type === filterType;
     return dateMatch && typeMatch;
@@ -73,10 +94,11 @@ export function BugHistory() {
         <p className="text-gray-400">Deep dive into all your coding mistakes</p>
       </div>
 
-      {/* Filters (This JSX is identical to the original) */}
+      {/* Filters */}
       <Card className="bg-gradient-to-br from-cyan-500/5 to-purple-500/5 border-cyan-500/30">
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4 items-center">
+            {/* ... all your filter JSX ... */}
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-400" />
               <span className="text-sm text-gray-400">Filters:</span>
@@ -90,12 +112,7 @@ export function BugHistory() {
                 </SelectTrigger>
                 <SelectContent className="bg-[#161b22] border-gray-700">
                   <SelectItem value="all">All Dates</SelectItem>
-                  {/* Note: This part could be improved to dynamically show dates from 'allBugs' */}
-                  <SelectItem value="2024-12-11">Dec 11, 2024</SelectItem>
-                  <SelectItem value="2024-12-10">Dec 10, 2024</SelectItem>
-                  <SelectItem value="2024-12-09">Dec 09, 2024</SelectItem>
-                  <SelectItem value="2024-12-08">Dec 08, 2024</SelectItem>
-                  <SelectItem value="2024-12-07">Dec 07, 2024</SelectItem>
+                  {/* You can later make these dates dynamic from the data */}
                 </SelectContent>
               </Select>
             </div>
@@ -134,14 +151,14 @@ export function BugHistory() {
         </CardContent>
       </Card>
 
-      {/* Bug Cards List (This JSX is identical to the original) */}
+      {/* Bug Cards List */}
       <div className="space-y-4">
         {filteredBugs.length === 0 ? (
           <Card className="bg-[#161b22] border-gray-800">
             <CardContent className="py-12 text-center">
               <AlertTriangle className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">No bugs found matching your filters</p>
-              <p className="text-sm text-gray-600 mt-2">Is your backend server running?</p>
+              <p className="text-gray-400">No bugs found.</p>
+              <p className="text-sm text-gray-600 mt-2">Make sure your backend is running and the database is connected.</p>
             </CardContent>
           </Card>
         ) : (
