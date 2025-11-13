@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Brain, History, BarChart3, TrendingUp, Sparkles, Download, Github, Target, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
-import brainImage from 'figma:asset/85e07a2532659d9a20a6b89f5a41b27426a3f351.png';
+import brainImage from '/Users/anirudh/CAMPUSCONNECT/BrainBug/brainbug-frontend/src/assets/Gemini_Generated_Image_o0v9s7o0v9s7o0v9.png';
 
 export function Home() {
   return (
@@ -58,7 +58,7 @@ export function Home() {
           <img 
             src={brainImage} 
             alt="AI Brain" 
-            className="relative z-10 rounded-2xl w-full"
+            className="relative z-10 rounded-2xl w-full h-80 object-cover object-center"
           />
         </div>
       </section>
