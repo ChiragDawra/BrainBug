@@ -10,14 +10,15 @@ export const getDashboard = async (req, res) => {
             return res.status(400).json({ error: "userId is required" });
         }
 
-        // Convert userId to ObjectId if it's a string
-        const userIdObjectId = mongoose.Types.ObjectId.isValid(userId) 
-            ? new mongoose.Types.ObjectId(userId) 
-            : userId;
+        // Handle userId - support both ObjectId and String (for demo/test users)
+        let userIdForQuery = userId;
+        if (typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId) && userId.length === 24) {
+            userIdForQuery = new mongoose.Types.ObjectId(userId);
+        }
 
         // 1. Stat Cards: Use MongoDB aggregation
         const statCards = await BugEntry.aggregate([
-            { $match: { userId: userIdObjectId } },
+            { $match: { userId: userIdForQuery } },
             {
                 $group: {
                     _id: null,
@@ -43,7 +44,15 @@ export const getDashboard = async (req, res) => {
         }
 
         // Get improvement score from UserAnalysis or calculate it
-        const userAnalysis = await UserAnalysis.findOne({ userId: userIdObjectId });
+        // Only query UserAnalysis if userId is a valid ObjectId
+        let userAnalysis = null;
+        if (userIdForQuery instanceof mongoose.Types.ObjectId || 
+            (typeof userIdForQuery === 'string' && mongoose.Types.ObjectId.isValid(userIdForQuery) && userIdForQuery.length === 24)) {
+            const userIdForAnalysis = userIdForQuery instanceof mongoose.Types.ObjectId 
+                ? userIdForQuery 
+                : new mongoose.Types.ObjectId(userIdForQuery);
+            userAnalysis = await UserAnalysis.findOne({ userId: userIdForAnalysis });
+        }
         const improvementScore = userAnalysis?.improvementScore || Math.max(0, 100 - (totalBugs * 2));
 
         // 2. AI Analysis: Fetch from UserAnalysis collection
@@ -56,7 +65,7 @@ export const getDashboard = async (req, res) => {
 
         // 3. Bugs vs. Time Chart: Group by timestamp (day)
         const bugsVsTime = await BugEntry.aggregate([
-            { $match: { userId: userIdObjectId } },
+            { $match: { userId: userIdForQuery } },
             {
                 $group: {
                     _id: {
@@ -76,7 +85,7 @@ export const getDashboard = async (req, res) => {
         ]);
 
         // 4. Recent Bug History: Last 5 entries
-        const recentBugs = await BugEntry.find({ userId: userIdObjectId })
+        const recentBugs = await BugEntry.find({ userId: userIdForQuery })
             .sort({ timestamp: -1 })
             .limit(5)
             .select("bugType projectName language filePath timestamp rootCause suggestedFix")

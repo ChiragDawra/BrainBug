@@ -40,14 +40,16 @@ export const analyzeCode = async (req, res) => {
         const projectName = filePath ? filePath.split('/').filter(Boolean)[0] || 'Unknown' : 'Unknown';
         const language = filePath ? getLanguageFromPath(filePath) : 'Other';
 
-        // 5. Convert userId to ObjectId if it's a string
-        const userIdObjectId = mongoose.Types.ObjectId.isValid(userId) 
-            ? new mongoose.Types.ObjectId(userId) 
-            : userId;
+        // 5. Handle userId - convert to ObjectId only if it's a valid 24-char hex string
+        // Otherwise keep as string (for demo/test users like "demo-user-123")
+        let userIdForDb = userId;
+        if (typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId) && userId.length === 24) {
+            userIdForDb = new mongoose.Types.ObjectId(userId);
+        }
 
         // 6. Create and save BugEntry
         const bugEntry = await saveBugEntry({
-            userId: userIdObjectId,
+            userId: userIdForDb,
             projectName,
             language,
             filePath: filePath || 'Unknown',
@@ -58,9 +60,16 @@ export const analyzeCode = async (req, res) => {
         });
 
         // 7. Asynchronously update UserAnalysis (don't wait for it)
-        updateUserAnalysisAsync(userIdObjectId).catch(err => {
-            console.error("Error updating UserAnalysis:", err);
-        });
+        // Only update if userId is a valid ObjectId (skip for demo users)
+        if (userIdForDb instanceof mongoose.Types.ObjectId || 
+            (typeof userIdForDb === 'string' && mongoose.Types.ObjectId.isValid(userIdForDb) && userIdForDb.length === 24)) {
+            const userIdForAnalysis = userIdForDb instanceof mongoose.Types.ObjectId 
+                ? userIdForDb 
+                : new mongoose.Types.ObjectId(userIdForDb);
+            updateUserAnalysisAsync(userIdForAnalysis).catch(err => {
+                console.error("Error updating UserAnalysis:", err);
+            });
+        }
 
         // 8. Send response
         return res.json({

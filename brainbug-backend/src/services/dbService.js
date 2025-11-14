@@ -25,12 +25,17 @@ export const saveBugEntry = async (bugData) => {
 // Async function to update UserAnalysis collection
 export const updateUserAnalysisAsync = async (userId) => {
     try {
-        // Convert userId to ObjectId if it's a string
-        const userIdObjectId = mongoose.Types.ObjectId.isValid(userId) 
-            ? new mongoose.Types.ObjectId(userId) 
-            : userId;
+        // Convert userId to ObjectId if it's a string and valid
+        let userIdObjectId = userId;
+        if (typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId) && userId.length === 24) {
+            userIdObjectId = new mongoose.Types.ObjectId(userId);
+        } else if (!(userId instanceof mongoose.Types.ObjectId)) {
+            // If it's not a valid ObjectId, skip UserAnalysis update (demo/test users)
+            console.log(`Skipping UserAnalysis update for non-ObjectId userId: ${userId}`);
+            return;
+        }
 
-        // Get all bug entries for this user
+        // Get all bug entries for this user (supports both ObjectId and String userIds)
         const bugEntries = await BugEntry.find({ userId: userIdObjectId }).lean();
 
         if (bugEntries.length === 0) {

@@ -3,11 +3,20 @@ const { Schema } = mongoose;
 
 const bugEntrySchema = new Schema({
   // This creates the link to the User model
+  // Supports both ObjectId (for real users) and String (for demo/test users)
   userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User', // This 'User' must match the model name from user.model.js
+    type: Schema.Types.Mixed, // Allows both ObjectId and String
     required: true,
     index: true, // Good for quickly finding all bugs for a user
+    // Custom setter to handle both ObjectId and String
+    set: function(value) {
+      // If it's a valid ObjectId string, convert it
+      if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value) && value.length === 24) {
+        return new mongoose.Types.ObjectId(value);
+      }
+      // Otherwise, keep it as a string (for demo/test users)
+      return value;
+    }
   },
   projectName: {
     type: String,

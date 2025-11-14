@@ -9,13 +9,14 @@ export const getBugHistory = async (req, res) => {
             return res.status(400).json({ error: "userId is required" });
         }
 
-        // Convert userId to ObjectId if it's a string
-        const userIdObjectId = mongoose.Types.ObjectId.isValid(userId) 
-            ? new mongoose.Types.ObjectId(userId) 
-            : userId;
+        // Handle userId - support both ObjectId and String (for demo/test users)
+        let userIdForQuery = userId;
+        if (typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId) && userId.length === 24) {
+            userIdForQuery = new mongoose.Types.ObjectId(userId);
+        }
 
         // Build query filter
-        const filter = { userId: userIdObjectId };
+        const filter = { userId: userIdForQuery };
 
         // Filter by bugType if provided
         if (bugType) {

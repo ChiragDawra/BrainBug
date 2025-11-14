@@ -9,14 +9,15 @@ export const getAnalytics = async (req, res) => {
             return res.status(400).json({ error: "userId is required" });
         }
 
-        // Convert userId to ObjectId if it's a string
-        const userIdObjectId = mongoose.Types.ObjectId.isValid(userId) 
-            ? new mongoose.Types.ObjectId(userId) 
-            : userId;
+        // Handle userId - support both ObjectId and String (for demo/test users)
+        let userIdForQuery = userId;
+        if (typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId) && userId.length === 24) {
+            userIdForQuery = new mongoose.Types.ObjectId(userId);
+        }
 
         // 1. Bug Type Distribution: Group by bugType
         const bugTypeDistribution = await BugEntry.aggregate([
-            { $match: { userId: userIdObjectId } },
+            { $match: { userId: userIdForQuery } },
             {
                 $group: {
                     _id: "$bugType",
@@ -35,7 +36,7 @@ export const getAnalytics = async (req, res) => {
 
         // 2. Bugs by Project: Group by projectName
         const bugsByProject = await BugEntry.aggregate([
-            { $match: { userId: userIdObjectId } },
+            { $match: { userId: userIdForQuery } },
             {
                 $group: {
                     _id: "$projectName",
@@ -54,7 +55,7 @@ export const getAnalytics = async (req, res) => {
 
         // 3. Bugs by Language: Group by language
         const bugsByLanguage = await BugEntry.aggregate([
-            { $match: { userId: userIdObjectId } },
+            { $match: { userId: userIdForQuery } },
             {
                 $group: {
                     _id: "$language",
