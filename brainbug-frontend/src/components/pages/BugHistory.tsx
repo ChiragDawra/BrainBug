@@ -1,204 +1,124 @@
-// 1. IMPORT useState AND useEffect
-import { useState, useEffect } from 'react';
-import { AlertTriangle, Filter, Calendar } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Button } from '../ui/button';
+// src/components/pages/BugHistory.tsx
+import React, { useState, useEffect } from 'react';
+import { getBugHistory } from '../../services/api';
 
-// 2. DEFINE THE SHAPE OF THE DATA THE *COMPONENT* NEEDS
+// --- Import your UI components ---
+// import { BugHistoryItem } from '../ui/BugHistoryItem';
+// import { LoadingSpinner } from '../ui/LoadingSpinner';
+// import { DatePicker } from '../ui/DatePicker'; // Your filter inputs
+// import { Select } from '../ui/Select';       // Your filter inputs
+// import { NoBugsFound } from '../ui/NoBugsFound'; // The "empty state" component
+
+// Define types
 interface Bug {
-  id: string; // MongoDB _id is a string
+  id: string;
+  title: string;
   type: string;
-  file: string;
-  line: number;
   date: string;
-  snippet: string;
-  language: string;
+  project: string;
 }
 
-// 3. DEFINE THE SHAPE OF THE *API RESPONSE* (matches your BugHistory.js model)
-interface BugHistoryDocument {
-  _id: string;
-  userId: string;
-  fileName: string;
-  originalCode: string;
-  mlPredictions: any; // We can make this more specific later
-  geminiOutput: any;  // We can make this more specific later
-  createdAt: string;  // MongoDB sends dates as strings
+interface Filters {
+  date: string;
+  bugType: string;
+  project: string;
+  // ...any other filters
 }
-
-// 4. DELETE THE OLD STATIC 'allBugs' ARRAY
-// const allBugs = [ ... ];
 
 export function BugHistory() {
-  // 5. SET UP STATE TO HOLD THE *TRANSFORMED* BUGS
-  const [allBugs, setAllBugs] = useState<Bug[]>([]);
-  const [filterDate, setFilterDate] = useState('all');
-  const [filterType, setFilterType] = useState('all');
+  // --- State for filters ---
+  const [filters, setFilters] = useState<Filters>({
+    date: '',
+    bugType: 'all',
+    project: 'all',
+  });
 
-  // 6. FETCH AND TRANSFORM DATA ON COMPONENT LOAD
+  // --- State for API results ---
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [bugs, setBugs] = useState<Bug[]>([]); // Default to an empty array
+
+  // --- Data Fetching Hook ---
   useEffect(() => {
-    const fetchBugs = async () => {
+    const fetchData = async () => {
       try {
-        // Fetch from your Express API
-        const response = await fetch('http://127.0.0.1:8000/api/bugs');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        
-        const data: BugHistoryDocument[] = await response.json();
+        setLoading(true);
+        setError(null);
 
-        // === IMPORTANT: DATA TRANSFORMATION ===
-        // We map the data from your DB schema to what the component expects
-        const transformedBugs: Bug[] = data.map(doc => ({
-          id: doc._id,
-          file: doc.fileName,
-          date: doc.createdAt,
-          
-          // --- We must make assumptions here. ---
-          // --- Adjust this based on your geminiOutput/mlPredictions object structure ---
-          type: doc.geminiOutput?.type || doc.mlPredictions?.type || 'Bug Type Unknown',
-          line: doc.geminiOutput?.line || doc.mlPredictions?.line || 0,
-          snippet: doc.geminiOutput?.snippet || doc.originalCode, // Fallback to original code
-          language: doc.geminiOutput?.language || 'JavaScript' // Default language
-        }));
+        // Pass the current filter state to the API
+        const bugData = await getBugHistory(filters); 
+        setBugs(bugData); // Store the returned array
 
-        setAllBugs(transformedBugs); // 7. Set the *transformed* data in state
-      } catch (error) {
-        console.error("Failed to fetch bugs:", error);
+      } catch (err) {
+        setError('Failed to fetch bug history.');
+        setBugs([]); // Clear bugs on error
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchBugs();
-  }, []); // The empty array [] means this runs only once
+    fetchData();
+  }, [filters]); // ⭐️ This is the magic! Re-runs when 'filters' changes.
 
-  
-  // --- FROM HERE DOWN, THE COMPONENT IS UNCHANGED ---
-  // It now uses the 'allBugs' from our state, which is filled by the API.
+  // --- Filter Change Handlers ---
+  // This updates the 'filters' state, which triggers the useEffect
+  const handleFilterChange = (filterName: keyof Filters, value: string) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      [filterName]: value,
+    }));
+  };
 
-  const filteredBugs = allBugs.filter((bug) => {
-    const dateMatch = filterDate === 'all' || new Date(bug.date).toISOString().startsWith(filterDate);
-    const typeMatch = filterType === 'all' || bug.type === filterType;
-    return dateMatch && typeMatch;
-  });
+  // --- Helper function to render the list ---
+  const renderBugList = () => {
+    if (loading) {
+      // return <LoadingSpinner />;
+      return <div className="p-6">Loading bug history...</div>;
+    }
 
-  const bugTypes = Array.from(new Set(allBugs.map((bug) => bug.type)));
+    if (error) {
+      return <div className="p-6 text-red-500">{error}</div>;
+    }
+
+    // ⭐ CRUCIAL: Check for an empty array
+    if (bugs.length === 0) {
+      // This is where you show your "No bugs found" message
+      // return <NoBugsFound />;
+      return <div className="p-6 text-center">No bugs found.</div>;
+    }
+
+    // Map over the bugs and render them
+    return (
+      <div className="space-y-4">
+        {/* {bugs.map((bug) => (
+          <BugHistoryItem key={bug.id} bug={bug} />
+        ))} */}
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h2 className="text-3xl mb-2">
-          <span className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">Bug History</span>
-        </h2>
-        <p className="text-gray-400">Deep dive into all your coding mistakes</p>
+    <div className="bug-history-container p-6">
+      <h1 className="text-2xl font-bold mb-4">Bug History</h1>
+
+      {/* 1. Filter Components */}
+      <div className="filters-bar flex gap-4 mb-6">
+        {/* <DatePicker 
+          onSelect={(date) => handleFilterChange('date', date.toString())} 
+        />
+        <Select 
+          onValueChange={(value) => handleFilterChange('bugType', value)}
+        >
+          <SelectItem value="all">All Types</SelectItem>
+          <SelectItem value="UI">UI</SelectItem>
+          <SelectItem value="Logic">Logic</SelectItem>
+        </Select> */}
+        {/* ...other filters */}
       </div>
 
-      {/* Filters */}
-      <Card className="bg-gradient-to-br from-cyan-500/5 to-purple-500/5 border-cyan-500/30">
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            {/* ... all your filter JSX ... */}
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-400">Filters:</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-400" />
-              <Select value={filterDate} onValueChange={setFilterDate}>
-                <SelectTrigger className="w-[180px] bg-[#0d1117] border-gray-700">
-                  <SelectValue placeholder="Filter by Date" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#161b22] border-gray-700">
-                  <SelectItem value="all">All Dates</SelectItem>
-                  {/* You can later make these dates dynamic from the data */}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-gray-400" />
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-[200px] bg-[#0d1117] border-gray-700">
-                  <SelectValue placeholder="Filter by Bug Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#161b22] border-gray-700">
-                  <SelectItem value="all">All Bug Types</SelectItem>
-                  {bugTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(filterDate !== 'all' || filterType !== 'all') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilterDate('all');
-                  setFilterType('all');
-                }}
-                className="bg-[#0d1117] border-gray-700 hover:bg-gray-800"
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bug Cards List */}
-      <div className="space-y-4">
-        {filteredBugs.length === 0 ? (
-          <Card className="bg-[#161b22] border-gray-800">
-            <CardContent className="py-12 text-center">
-              <AlertTriangle className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">No bugs found.</p>
-              <p className="text-sm text-gray-600 mt-2">Make sure your backend is running and the database is connected.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredBugs.map((bug) => (
-            <Card key={bug.id} className="bg-[#161b22] border-gray-800 hover:border-cyan-500/50 transition-colors">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-yellow-500 mt-1" />
-                    <div>
-                      <CardTitle className="text-lg">{bug.type}</CardTitle>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {bug.file}:<span className="text-blue-400">{bug.line}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(bug.date).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric', 
-                      year: 'numeric' 
-                    })}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-[#0d1117] rounded-lg p-4 border border-gray-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-gray-500">Code Snippet</span>
-                    <span className="text-xs text-blue-400">{bug.language}</span>
-                  </div>
-                  <pre className="text-sm text-gray-300 overflow-x-auto">
-                    <code>{bug.snippet}</code>
-                  </pre>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+      {/* 2. Bug List (with loading/empty state) */}
+      {renderBugList()}
     </div>
   );
 }
