@@ -61,7 +61,17 @@ export const getAnalyticsData = async () => {
   const response = await apiClient.get('/analytics');
   return response.data;
 };
-
+export const getBugTypes = async (): Promise<string[]> => {
+    try {
+      // We assume the backend has an endpoint '/bug-types'
+      // that returns an array of strings: ["Null Pointer", "Type Mismatch", ...]
+      const response = await apiClient.get('/bug-types');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching bug types:', error);
+      return []; // Return an empty array on error
+    }
+  };
 export const getBugHistory = async (filters: object) => {
   // ... (Follow the same pattern as above)
   const response = await apiClient.get('/bug-history', { params: filters });
