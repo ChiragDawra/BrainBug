@@ -128,7 +128,7 @@ export function SignUp() {
                 <Checkbox
                   id="terms"
                   checked={formData.agreeToTerms}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked : boolean) => 
                     setFormData({ ...formData, agreeToTerms: checked as boolean })
                   }
                   className="mt-1"

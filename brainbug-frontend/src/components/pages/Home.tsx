@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom';
 import { Brain, History, BarChart3, TrendingUp, Sparkles, Download, Github, Target, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Button } from '../ui/button';
-import brainImage from '/Users/anirudh/CAMPUSCONNECT/BrainBug/brainbug-frontend/src/assets/Gemini_Generated_Image_o0v9s7o0v9s7o0v9.png';
-
+// Line 25 (Corrected - Cleaner)
+import brainImage from "../../assets/Gemini_Generated_Image_o0v9s7o0v9s7o0v9.png";
 export function Home() {
   return (
     <div className="space-y-20 pb-20">
