@@ -52,7 +52,7 @@ export const analyzeWithGemini = async (code, mlOutput, filePath = "", retries =
     const models = [
         'gemini-2.5-flash',
         'gemini-2.0-flash',
-        'gemini-1.5-flash-latest'  // Fallback to legacy model if available
+        'gemini-1.5-flash-latest'  // Fallback
     ];
 
     let lastError = null;
@@ -75,20 +75,29 @@ export const analyzeWithGemini = async (code, mlOutput, filePath = "", retries =
                 );
 
                 // Extract the text from Gemini's response
-                let analysisText = result.data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available";
-                
-                // Clean up the response - remove markdown code blocks if present
-                analysisText = analysisText.trim();
-                if (analysisText.startsWith('```json')) {
-                    analysisText = analysisText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-                } else if (analysisText.startsWith('```')) {
-                    analysisText = analysisText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+                const analysisText = result.data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                console.log(`Analysis: ${analysisText}`)
+
+                if (!analysisText) {
+                    throw new Error("No analysis text returned from Gemini.");
+                }
+
+                // 3. NEW: Parse the text response into a JSON object
+                let parsedAnalysis;
+                try {
+                    parsedAnalysis = JSON.parse(analysisText);
+                } catch (parseError) {
+                    console.error("Critical: Gemini response was not valid JSON.");
+                    console.error("Raw Response:", analysisText);
+                    // This is a failure, throw an error to trigger retry/failure
+                    throw new Error(`Failed to parse Gemini JSON: ${parseError.message}`);
                 }
                 
-                console.log(`✓ Successfully analyzed with ${model}`);
+                console.log(`✓ Successfully analyzed and parsed with ${model}`);
                 
                 return {
-                    analysis: analysisText, // This will be parsed as JSON in the controller
+                    analysis: parsedAnalysis, // Return the object, not text
                     model: model,
                     rawResponse: result.data
                 };
