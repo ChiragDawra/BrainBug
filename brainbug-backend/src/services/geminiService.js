@@ -3,20 +3,49 @@ import axios from "axios";
 // Helper function to wait/delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const analyzeWithGemini = async (code, mlOutput, retries = 3) => {
+// Helper function to detect language from file path
+const getLanguageFromPath = (filePath) => {
+    const ext = filePath.split('.').pop()?.toLowerCase();
+    const langMap = {
+        'ts': 'TypeScript',
+        'tsx': 'TypeScript',
+        'js': 'JavaScript',
+        'jsx': 'JavaScript',
+        'py': 'Python',
+        'java': 'Java'
+    };
+    return langMap[ext] || 'Other';
+};
+
+export const analyzeWithGemini = async (code, mlOutput, filePath = "", retries = 3) => {
+    // Extract project name and language from filePath
+    const projectName = filePath ? filePath.split('/').filter(Boolean)[0] || 'Unknown' : 'Unknown';
+    const language = filePath ? getLanguageFromPath(filePath) : 'Other';
+    
     const prompt = `
-    You are BrainBug AI. Analyze the following code.
+    You are BrainBug AI. Analyze the following code and return a JSON object with the following structure:
+    {
+      "bugType": "string (e.g., 'Logic Error', 'Syntax Error', 'Performance Issue', etc.)",
+      "rootCause": "string (detailed explanation of why this bug exists)",
+      "recommendation": "string (general recommendation for avoiding this type of bug)",
+      "suggestedFix": "string (specific code fix or improvement suggestion)"
+    }
+
     ML Model says:
     ${JSON.stringify(mlOutput, null, 2)}
 
-    Now deeply analyze:
-    - bugs
-    - fixes
-    - optimizations
-    - cleaner code suggestions
+    File Path: ${filePath || 'Not provided'}
+
+    Analyze the code deeply and provide:
+    - The most critical bug type found
+    - Root cause analysis
+    - Recommendation for improvement
+    - Suggested fix
 
     Code:
     ${code}
+
+    IMPORTANT: Return ONLY valid JSON, no additional text or markdown formatting.
     `;
 
     // Try different models in order of preference
@@ -46,12 +75,20 @@ export const analyzeWithGemini = async (code, mlOutput, retries = 3) => {
                 );
 
                 // Extract the text from Gemini's response
-                const analysisText = result.data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available";
+                let analysisText = result.data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available";
+                
+                // Clean up the response - remove markdown code blocks if present
+                analysisText = analysisText.trim();
+                if (analysisText.startsWith('```json')) {
+                    analysisText = analysisText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+                } else if (analysisText.startsWith('```')) {
+                    analysisText = analysisText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+                }
                 
                 console.log(`✓ Successfully analyzed with ${model}`);
                 
                 return {
-                    analysis: analysisText,
+                    analysis: analysisText, // This will be parsed as JSON in the controller
                     model: model,
                     rawResponse: result.data
                 };
