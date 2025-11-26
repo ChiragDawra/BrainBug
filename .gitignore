@@ -1,139 +1,39 @@
-empty file
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# Dependencies
-node_modules/
-.npm
-.yarn-integrity
-
-# Production builds
-build/
-dist/
-.next/
-out/
-
-# Environment variables
+# Virtual env
+brainbug_env/
+venv/
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+*.env
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
+# Node modules
 node_modules/
-jspm_packages/
 
-# Optional npm cache directory
-.npm
+# Logs & outputs
+logs/
+*.log
+wandb/
+tensorboard/
+*.tmp
+*.temp
 
-# Optional eslint cache
-.eslintcache
+# Datasets
+data/
 
-# Optional REPL history
-.node_repl_history
+# Model checkpoints & heavy weights
+ml_models/
+checkpoint-*/
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.safetensors
+vocab.json
+merges.txt
+tokenizer_config.json
+special_tokens_map.json
+generation_config.json
 
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env
-.env.test
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
-tmp/
-temp/
-
-# Editor directories and files
+# System and IDE
+.DS_Store
+Thumbs.db
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Windows
-Desktop.ini
-
-# Linux
-*~
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# API keys and secrets
-*.pem
-*.key
-*.crt
-
-# Build tools
-webpack-stats.json
-
-# Debugging
-*.log
-
-# Testing
-/junit.xml
-
-# Production
-/.env.production
-
-# Development
-/.env.development
