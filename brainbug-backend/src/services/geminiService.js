@@ -21,7 +21,7 @@ export const analyzeWithGemini = async (code, mlOutput, filePath = "", retries =
     // Extract project name and language from filePath
     const projectName = filePath ? filePath.split('/').filter(Boolean)[0] || 'Unknown' : 'Unknown';
     const language = filePath ? getLanguageFromPath(filePath) : 'Other';
-    
+
     const prompt = `
     You are BrainBug AI. Analyze the following code and return a JSON object with the following structure:
     {
@@ -31,7 +31,7 @@ export const analyzeWithGemini = async (code, mlOutput, filePath = "", retries =
       "suggestedFix": "string (specific code fix or improvement suggestion)"
     }
 
-    ML Model says:
+    ML Model Analysis (Hugging Face - Sagar123x/brainbug):
     ${JSON.stringify(mlOutput, null, 2)}
 
     File Path: ${filePath || 'Not provided'}
@@ -40,7 +40,7 @@ export const analyzeWithGemini = async (code, mlOutput, filePath = "", retries =
     - The most critical bug type found
     - Root cause analysis
     - Recommendation for improvement
-    - Suggested fix
+    - Suggested fix (You may use the ML model's output as a reference, but verify it)
 
     Code:
     ${code}
@@ -63,7 +63,7 @@ export const analyzeWithGemini = async (code, mlOutput, filePath = "", retries =
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
                 console.log(`Attempting Gemini API call with ${model} (attempt ${attempt}/${retries})...`);
-                
+
                 const result = await axios.post(
                     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
                     {
@@ -93,9 +93,9 @@ export const analyzeWithGemini = async (code, mlOutput, filePath = "", retries =
                     // This is a failure, throw an error to trigger retry/failure
                     throw new Error(`Failed to parse Gemini JSON: ${parseError.message}`);
                 }
-                
+
                 console.log(`✓ Successfully analyzed and parsed with ${model}`);
-                
+
                 return {
                     analysis: parsedAnalysis, // Return the object, not text
                     model: model,
