@@ -1,8 +1,9 @@
 import { ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Brain, Home, History, BarChart3, LayoutDashboard, Sun, Moon } from 'lucide-react';
+import { Brain, Home, History, BarChart3, LayoutDashboard, Sun, Moon, LogOut, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,7 +11,13 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-[#0d1117] dark:bg-[#0d1117] light:bg-gray-50 text-gray-100 dark:text-gray-100 light:text-gray-900 transition-colors">
@@ -89,19 +96,39 @@ export function Layout({ children }: LayoutProps) {
                 >
                   {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/signin')}
-                  className="border-gray-700 dark:border-gray-700 light:border-gray-300 hover:bg-gray-800 dark:hover:bg-gray-800 light:hover:bg-gray-100"
-                >
-                  Sign In
-                </Button>
-                <Button 
-                  onClick={() => navigate('/signup')}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
-                >
-                  Sign Up
-                </Button>
+                
+                {isAuthenticated ? (
+                  <>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 dark:bg-gray-800 light:bg-gray-100">
+                      <User className="h-4 w-4 text-cyan-400" />
+                      <span className="text-sm text-gray-300 dark:text-gray-300 light:text-gray-700">{user?.name}</span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleLogout}
+                      className="border-gray-700 dark:border-gray-700 light:border-gray-300 hover:bg-gray-800 dark:hover:bg-gray-800 light:hover:bg-gray-100"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/signin')}
+                      className="border-gray-700 dark:border-gray-700 light:border-gray-300 hover:bg-gray-800 dark:hover:bg-gray-800 light:hover:bg-gray-100"
+                    >
+                      Sign In
+                    </Button>
+                    <Button 
+                      onClick={() => navigate('/signup')}
+                      className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
+                    >
+                      Sign Up
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

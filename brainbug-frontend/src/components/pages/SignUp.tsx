@@ -6,9 +6,11 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function SignUp() {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -17,7 +19,7 @@ export function SignUp() {
     agreeToTerms: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
@@ -30,10 +32,13 @@ export function SignUp() {
       return;
     }
 
-    // Simulate registration
-    console.log('Sign up with:', formData);
-    // Redirect to dashboard after "successful" registration
-    navigate('/dashboard');
+    try {
+      await signup(formData.name, formData.email, formData.password);
+      console.log('Sign up successful with:', formData);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Signup failed:', error);
+    }
   };
 
   return (

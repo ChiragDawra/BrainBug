@@ -1,0 +1,58 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: brainbug-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: brainbug
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - brainbug-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./brainbug-backend
+      dockerfile: Dockerfile
+    container_name: brainbug-backend
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - MONGO_URI=mongodb://mongodb:27017/brainbug
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - mongodb
+    networks:
+      - brainbug-network
+    volumes:
+      - ./brainbug-backend:/app
+      - /app/node_modules
+
+  # Frontend
+  frontend:
+    build:
+      context: ./brainbug-frontend
+      dockerfile: Dockerfile
+    container_name: brainbug-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - brainbug-network
+
+networks:
+  brainbug-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

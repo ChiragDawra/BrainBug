@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bug, TrendingUp, AlertTriangle, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { getDashboardData } from '../../services/api'; // 1. Import your API function
+import { getDashboardData, DashboardData as ApiDashboardData } from '../../services/api'; // 1. Import your API function
 
 // --- 2. Define your data interface ---
 interface DashboardData {
@@ -14,9 +14,9 @@ interface DashboardData {
   };
   aiAnalysis: {
     patternRecognition: string;
-    predictiveInsights: string; // This will map to "Root Cause Analysis"
-    remediationSuggestions: string; // This will map to "Improvement Insights"
-    impactAssessment: string; // This will map to "Personalized Recommendation"
+    rootCauseAnalysis: string;
+    improvementInsights: string;
+    personalizedRecommendation: string;
   };
   bugsOverTime: { date: string; bugs: number }[]; // Renamed 'count' to 'bugs' to match your chart
   recentBugs: {
@@ -39,9 +39,9 @@ const DEFAULT_DASHBOARD_DATA: DashboardData = {
   },
   aiAnalysis: {
     patternRecognition: "Analyzing your error patterns...",
-    predictiveInsights: "Looking for root causes in your recent code...",
-    remediationSuggestions: "Generating improvement insights based on your progress...",
-    impactAssessment: "Creating personalized recommendations for your coding style...",
+    rootCauseAnalysis: "Looking for root causes in your recent code...",
+    improvementInsights: "Generating improvement insights based on your progress...",
+    personalizedRecommendation: "Creating personalized recommendations for your coding style...",
   },
   bugsOverTime: [], // An empty array will show an empty chart
   recentBugs: [],   // An empty array will show the "No bugs" message
@@ -172,21 +172,21 @@ export function Dashboard() {
           <div className="p-4 rounded-lg bg-[#0d1117] border border-gray-800">
             <h4 className="text-sm mb-2 text-cyan-400">庁 Root Cause Analysis</h4>
             <p className="text-sm text-gray-300">
-              {data.aiAnalysis.predictiveInsights}
+              {data.aiAnalysis.rootCauseAnalysis}
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-[#0d1117] border border-gray-800">
             <h4 className="text-sm mb-2 text-green-400">笨ｨ Improvement Insights</h4>
             <p className="text-sm text-gray-300">
-              {data.aiAnalysis.remediationSuggestions}
+              {data.aiAnalysis.improvementInsights}
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-[#0d1117] border border-gray-800">
             <h4 className="text-sm mb-2 text-pink-400">雌 Personalized Recommendation</h4>
             <p className="text-sm text-gray-300">
-              {data.aiAnalysis.impactAssessment}
+              {data.aiAnalysis.personalizedRecommendation}
             </p>
           </div>
         </CardContent>

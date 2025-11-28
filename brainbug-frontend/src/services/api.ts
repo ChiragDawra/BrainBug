@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// ⚠️ Get this URL from Team 1!
-// This is just a placeholder and WILL NOT WORK until they give you the real one.
-const API_URL = 'http://localhost:8000/api'; 
+// Use environment variable or default to localhost
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'; 
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -19,9 +18,9 @@ export interface DashboardStats {
 
 export interface AiAnalysis {
   patternRecognition: string;
-  predictiveInsights: string;
-  remediationSuggestions: string;
-  impactAssessment: string;
+  rootCauseAnalysis: string;
+  improvementInsights: string;
+  personalizedRecommendation: string;
 }
 
 export interface TimeSeriesDataPoint {
@@ -47,7 +46,11 @@ export interface DashboardData {
 
 export const getDashboardData = async (): Promise<DashboardData> => {
   try {
-    const response = await apiClient.get<DashboardData>('/dashboard');
+    // For now, use a demo userId. In production, get this from auth context
+    const userId = localStorage.getItem('userId') || 'demo-user';
+    const response = await apiClient.get<DashboardData>('/dashboard', {
+      params: { userId }
+    });
     return response.data;
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
